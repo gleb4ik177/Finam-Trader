@@ -1200,7 +1200,8 @@ async def get_simple_pie_plot(labels: list, values: list, title: str = "Круг
         )
         
         fig.title(title, fontsize=12, fontweight='bold')
-        fig.savefig('img/fig{random.randint(0, 1000)}.png', bbox_inches='tight')
+        fname = f"img/fig{random.randint(0, 1000)}.png"
+        fig.savefig(fname, bbox_inches='tight')
         plt.close(fig)
 
         return 'График успешно нарисован и будет передан клиенту'
