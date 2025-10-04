@@ -2,51 +2,17 @@ from fastmcp import FastMCP
 from typing import Any
 import requests
 import os
+import numpy
+import matplotlib.pyplot as plt
+import numpy as np
 from dotenv import load_dotenv
+import pickle
 
 load_dotenv()
 
 mcp = FastMCP(
     name="Finam API MCP",
     instructions="""Ассистент для работы с Finam Trade API - полный доступ к биржевой торговле через Finam.
-    
-**РЫНОЧНЫЕ ДАННЫЕ:**
-- `get_orderbook(symbol)` - биржевой стакан котировок
-- `get_candles(symbol, timeframe, start, end)` - исторические свечи (OHLCV)
-- `get_last_quote(symbol)` - последняя котировка с лучшими ценами
-- `get_latest_trades(symbol)` - последние сделки по инструменту
-
-**УПРАВЛЕНИЕ СЧЕТАМИ И ПОРТФЕЛЕМ:**
-- `get_account(account_id)` - информация о счете и балансе
-- `get_positions(account_id)` - открытые позиции
-- `get_orders(account_id)` - активные заявки
-- `get_order(order_id, account_id)` - детали конкретной заявки
-- `get_trades(account_id, start, end)` - история сделок
-- `get_transactions(account_id, start, end)` - денежные транзакции
-
-**ТОРГОВЫЕ ОПЕРАЦИИ:**
-- `create_order(order_data, account_id)` - выставление заявки
-- `cancel_order(order_id, account_id)` - отмена заявки
-
-**СПРАВОЧНАЯ ИНФОРМАЦИЯ:**
-- `get_assets()` - все доступные инструменты
-- `get_exchanges()` - список бирж и MIC коды
-- `get_asset(symbol, account_id)` - детали инструмента
-- `get_asset_params(symbol, account_id)` - торговые параметры
-- `get_options_chain(underlying_symbol)` - цепочка опционов
-- `get_schedule(symbol)` - расписание торгов
-
-**СИСТЕМНЫЕ ФУНКЦИИ:**
-- `get_session_details()` - информация о токене сессии
-
-**ДОПОЛНИТЕЛЬНЫЕ РЕСУРСЫ:**
-- `get_company_ticker(company)` - поиск тикера по названию компании
-- `get_api_examples()` - примеры использования API
-
-**ВАЖНО:** 
-- Для большинства функций требуется указать `account_id` (формат: "TRQD05:989213")
-- Символы инструментов указываются в формате "TICKER@MIC" (например: "SBER@MISX")
-
 Используй соответствующие инструменты для анализа рынка, управления портфелем и выполнения торговых операций через Finam API."""
 )
 
@@ -209,12 +175,12 @@ async def get_candles(
 
 
 @mcp.tool
-async def get_account(account_id: str="{account_id}") -> dict[str, Any]:
+async def get_account(account_id: str) -> dict[str, Any]:
     """
     Получить информацию по конкретному аккаунту.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
 
     Returns:
         dict[str, Any]: JSON объект с информацией об аккаунте:
@@ -272,12 +238,12 @@ async def get_account(account_id: str="{account_id}") -> dict[str, Any]:
 
 
 @mcp.tool
-async def get_orders(account_id: str="{account_id}") -> dict[str, Any]:
+async def get_orders(account_id: str) -> dict[str, Any]:
     """
     Получить список заявок для аккаунта.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
 
     Returns:
         dict[str, Any]: JSON объект со списком заявок:
@@ -327,12 +293,12 @@ async def get_orders(account_id: str="{account_id}") -> dict[str, Any]:
 
 
 @mcp.tool
-async def get_order(order_id: str, account_id: str="{account_id}") -> dict[str, Any]:
+async def get_order(order_id: str, account_id: str) -> dict[str, Any]:
     """
     Получить информацию о конкретном ордере.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
         order_id (str): Идентификатор заявки
 
     Returns:
@@ -370,12 +336,12 @@ async def get_order(order_id: str, account_id: str="{account_id}") -> dict[str, 
 
 
 @mcp.tool
-async def create_order(order_data: dict[str, Any], account_id: str="{account_id}") -> dict[str, Any]:
+async def create_order(order_data: dict[str, Any], account_id: str) -> dict[str, Any]:
     """
     Выставить биржевую заявку.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
         order_data (dict[str, Any]): Параметры заявки:
             - symbol (str): Символ инструмента
             - quantity (str): Количество в штуках (строковое значение)
@@ -427,12 +393,12 @@ async def create_order(order_data: dict[str, Any], account_id: str="{account_id}
 
 
 @mcp.tool
-async def cancel_order(order_id: str, account_id: str="{account_id}") -> dict[str, Any]:
+async def cancel_order(order_id: str, account_id: str) -> dict[str, Any]:
     """
     Отменить биржевую заявку.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
         order_id (str): Идентификатор заявки
 
     Returns:
@@ -464,12 +430,12 @@ async def cancel_order(order_id: str, account_id: str="{account_id}") -> dict[st
 
 
 @mcp.tool
-async def get_trades(account_id: str="{account_id}", start: str | None = None, end: str | None = None) -> dict[str, Any]:
+async def get_trades(account_id: str, start: str | None = None, end: str | None = None) -> dict[str, Any]:
     """
     Получить историю по сделкам аккаунта.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
         start (str | None): Начало периода в формате ISO 8601
         end (str | None): Конец периода в формате ISO 8601
 
@@ -515,14 +481,14 @@ async def get_trades(account_id: str="{account_id}", start: str | None = None, e
 
 
 @mcp.tool
-async def get_positions(account_id: str="{account_id}") -> dict[str, Any]:
+async def get_positions(account_id: str) -> dict[str, Any]:
     """
     Получить открытые позиции по счету.
     Основной интерес представляет поле 'positions' в ответе API, содержащее список открытых позиций.
     Но при необходимости при формировании ответа пользователю можешь пользоваться и другими полями.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
 
     Returns:
         dict[str, Any]: JSON объект с информацией об аккаунте:
@@ -780,7 +746,7 @@ async def get_asset_params(symbol: str, account_id: str = "{account_id}") -> dic
 
     Args:
         symbol (str): Символ инструмента в формате "<TICKER>@<MIC>"
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
 
     Returns:
         dict[str, Any]: JSON объект с торговыми параметрами инструмента:
@@ -1072,7 +1038,7 @@ async def get_latest_trades(symbol: str) -> dict[str, Any]:
 
 
 @mcp.tool
-async def get_transactions(account_id: str="{account_id}", start: str | None = None, end: str | None = None) -> dict[str, Any]:
+async def get_transactions(account_id: str, start: str | None = None, end: str | None = None) -> dict[str, Any]:
     """
     Получить историю транзакций по счету за указанный период.
 
@@ -1080,7 +1046,7 @@ async def get_transactions(account_id: str="{account_id}", start: str | None = N
     комиссии, пополнения, выводы средств и другие денежные движения.
 
     Args:
-        account_id (str): Идентификатор счёта. Если не задан, используется значение по-умолчанию "{account_id}"
+        account_id (str): Идентификатор счёта.
         start (str | None): Начало периода в формате ISO 8601 (опционально)
         end (str | None): Конец периода в формате ISO 8601 (опционально)
 
@@ -1144,6 +1110,34 @@ async def get_transactions(account_id: str="{account_id}", start: str | None = N
         params["interval.end_time"] = end
     return await execute_request("GET", f"/v1/accounts/{account_id}/transactions", params=params)
 
+'''@mcp.tool
+async def get_plots(time_data: list | None, points: list, label: str) -> str:
+    """
+    Нарисовать график исторических данных
+
+    По переданным дате и значениям отрисовывает график исторических значений
+
+    Args:
+        time_data (list | None): массив дат в формате ISO 8601 (опционально)
+        points (list): массив точек временного ряда
+        label (str): название показателя
+
+    Returns:
+        str: статус отрисовки графика
+    """
+
+    try:
+        t = np.array(time_data)
+        p = np.array(points)
+        
+        plt.plot(t, p, label = label)
+        plt.legend()
+        plt.savefig('./img/foo.png')
+
+        return pi
+    except:
+        return 'график не может быть нарисован'''
+
 # === РЕСУРСЫ ===
 @mcp.resource("ref://moex/tickers/{company}")
 def get_company_ticker(company:str) -> str:
@@ -1170,20 +1164,6 @@ def get_company_ticker(company:str) -> str:
         "аэрофлот": "AFLT@MISX"
     }
     return moex_mapping.get(company, f"Тикер для {company} не найден")
-
-@mcp.resource("examples://api-examples")
-def get_api_examples() -> str:
-    """Возвращает примеры API эндпоинтов для запросов пользователей
-    Каждый пример состоит из:
-        uid - идентификатор пользователя,
-        type - тип запроса к API (например POST, DELETE, GET),
-        question - запрос пользователя,
-        request - необходимый эндпоинт для получения информации, необходимой для удовлетворения запроса пользователя
-    """
-
-    with open("train.csv", "r") as f:
-        return f.read()
-
 
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")

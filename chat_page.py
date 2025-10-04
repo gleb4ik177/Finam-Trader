@@ -3,6 +3,7 @@ import asyncio
 import time
 from langchain_core.messages import HumanMessage, AIMessage
 from llm_agent import ChatBot
+import os
 
 st.set_page_config(page_title="Финансовый ассистент", page_icon="💹")
 
@@ -21,7 +22,7 @@ if "dialog" not in st.session_state:
 if not st.session_state.dialog:
     st.info(
         "👋 Привет! Я ваш финансовый ассистент. Могу помочь работать с Finam API: "
-        "проверять счета, находить акции, выполнять торговые операции (с подтверждением). "
+        "проверять счета, находить акции, выполнять торговые операции. "
         "Задайте вопрос!"
     )
 
@@ -42,5 +43,14 @@ if user_input:
 
         with st.spinner("Думаю..."):
             response = asyncio.run(bot.send_message(user_input))
+        st.markdown(response)
 
-    st.session_state.dialog.append(("assistant", response.strip()))
+        st.session_state.dialog.append(("assistant", response.strip()))
+
+        img_folder = "img"
+        if os.path.exists(img_folder):
+            images = [os.path.join(img_folder, img) for img in os.listdir(img_folder)
+                      if img.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))]
+            for img_path in images:
+                st.image(img_path, use_column_width=True)
+                os.remove(img_path)
