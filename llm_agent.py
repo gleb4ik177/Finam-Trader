@@ -19,7 +19,7 @@ class ChatBot:
         load_dotenv()
         #df = pd.read_csv('.//train.csv', delimiter=';')
 
-        client = MultiServerMCPClient({'trade': {'url': 'https://unrammed-supremely-venus.ngrok-free.dev',
+        client = MultiServerMCPClient({'trade': {'url': 'https://screeching-blue-barracuda.fastmcp.app/mcp',
                                                 "transport": "streamable_http"}})
 
         tools = asyncio.run(client.get_tools())
@@ -198,7 +198,7 @@ async def get_submission():
     df_test = pd.read_csv('.//test.csv', delimiter=';')
     ans = {}
 
-    client = MultiServerMCPClient({'trade': {'url': 'https://unrammed-supremely-venus.ngrok-free.dev',
+    client = MultiServerMCPClient({'trade': {'url': 'https://screeching-blue-barracuda.fastmcp.app/mcp',
                                                 "transport": "streamable_http"}})
 
     tools = await client.get_tools()
