@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from dotenv import load_dotenv
 import pickle
+import dateutil.parser
+import random
 
 load_dotenv()
 
@@ -1110,8 +1112,8 @@ async def get_transactions(account_id: str, start: str | None = None, end: str |
         params["interval.end_time"] = end
     return await execute_request("GET", f"/v1/accounts/{account_id}/transactions", params=params)
 
-'''@mcp.tool
-async def get_plots(time_data: list | None, points: list, label: str) -> str:
+@mcp.tool
+async def get_history_plots(time_data: list | None, points: list, label: str) -> str:
     """
     Нарисовать график исторических данных
 
@@ -1125,18 +1127,86 @@ async def get_plots(time_data: list | None, points: list, label: str) -> str:
     Returns:
         str: статус отрисовки графика
     """
-
     try:
-        t = np.array(time_data)
+        t = np.array([dateutil.parser.parse(t) for t in time_data])
         p = np.array(points)
         
-        plt.plot(t, p, label = label)
-        plt.legend()
-        plt.savefig('./img/foo.png')
+        fig, ax = plt.subplots()
+        ax.plot(t, p, label=label)
+        ax.set_xticklabels(t, rotation=30)
+        ax.legend()
+        fig.savefig(f"img/fig{random.randint(0, 1000)}.png", bbox_inches="tight")
+        plt.close(fig)
 
-        return pi
+        return 'график успешно нарисован и будет передан клиенту'
     except:
-        return 'график не может быть нарисован'''
+        return 'график не может быть нарисован'
+
+@mcp.tool
+async def get_comparision_histograms(points: list, labels: list) -> str:
+    """
+    Нарисовать график гистограммы сравнения величин
+
+    Args:
+        points (list): массив точек
+        label (str): массив названий показателей
+
+    Returns:
+        str: статус отрисовки графика
+    """
+
+    try:
+        p = np.array(points)
+        l = np.array(labels)
+        
+        fig, ax = plt.subplots()
+        ax.bar(l, p)
+        ax.set_xticklabels(l, rotation=30)
+        fname = f"img/fig{random.randint(0, 1000)}.png"
+        fig.savefig(fname, bbox_inches="tight")
+        plt.close(fig)
+
+        return 'график успешно нарисован и будет передан клиенту'
+    except:
+        return 'график не может быть нарисован'
+
+@mcp.tool
+async def get_simple_pie_plot(labels: list, values: list, title: str = "Круговая диаграмма") -> str:
+    """
+    Нарисовать круговую диаграмму (pie chart)
+
+    По переданным наименованиям и значениям отрисовывает круговую диаграмму
+
+    Args:
+        labels (list): массив наименований категорий
+        values (list): массив значений для каждой категории
+        title (str, optional): заголовок диаграммы. По умолчанию "Круговая диаграмма"
+
+    Returns:
+        str: статус отрисовки диаграммы
+    """
+    try:
+        if len(labels) != len(values):
+            return 'Ошибка: количество наименований и значений не совпадает'
+        
+        fig, ax = plt.subplots()
+        
+        ax.pie(
+            values, 
+            labels=labels, 
+            autopct='%1.1f%%',
+            startangle=90,
+            colors=plt.cm.Pastel1(np.linspace(0, 1, len(labels)))
+        )
+        
+        fig.title(title, fontsize=12, fontweight='bold')
+        fig.savefig('img/fig{random.randint(0, 1000)}.png', bbox_inches='tight')
+        plt.close(fig)
+
+        return 'График успешно нарисован и будет передан клиенту'
+    
+    except Exception as e:
+        return f'Ошибка при создании диаграммы: {str(e)}'
 
 # === РЕСУРСЫ ===
 @mcp.resource("ref://moex/tickers/{company}")
