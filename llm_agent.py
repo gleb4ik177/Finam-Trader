@@ -194,6 +194,8 @@ class ChatBot:
             return re.sub(r"<think>.*?</think>", "", assistant_reply, flags=re.DOTALL)
 
 async def get_submission():
+    load_dotenv()
+    
     df = pd.read_csv('.//train.csv', delimiter=';')
     df_test = pd.read_csv('.//test.csv', delimiter=';')
     ans = {}
