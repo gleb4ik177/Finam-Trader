@@ -1,6 +1,7 @@
 # Finam-Trader
 ## About
-Цель проекта - создание AI-ассистента и MCP-сервера для вызова функций Finam TradeAPI с помощью команд в текстовом виде.<br>
+Цель проекта - создание AI-ассистента и MCP-сервера для вызова функций Finam TradeAPI с помощью команд в текстовом виде.
+Проект был сделан в ходе Finam x HSE TRADE AI HACK и занял 4 место в категории Trader<br>
 Ассистент доступен по ссылке: https://finam-trader-bot.streamlit.app/
 ### Project architecture
 <p align="center">
