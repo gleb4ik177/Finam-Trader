@@ -17,14 +17,13 @@ warnings.filterwarnings('ignore')
 class ChatBot:
     def __init__(self):
         load_dotenv()
-        #df = pd.read_csv('.//train.csv', delimiter=';')
 
-        client = MultiServerMCPClient({'trade': {'url': 'https://screeching-blue-barracuda.fastmcp.app/mcp',
+        client = MultiServerMCPClient({'trade': {'url': 'http://127.0.0.1:8000/mcp',
                                                 "transport": "streamable_http"}})
 
         tools = asyncio.run(client.get_tools())
 
-        #model = ChatOllama(model='qwen3:4b', temperature=0)
+        #model = ChatOllama(model='qwen3:4b', temperature=0) для локальной модели
         model = ChatOpenAI(
             api_key=os.getenv("OPENROUTER_API_KEY"),
             base_url="https://openrouter.ai/api/v1",
@@ -194,19 +193,21 @@ class ChatBot:
             return re.sub(r"<think>.*?</think>", "", assistant_reply, flags=re.DOTALL)
 
 async def get_submission():
-    df = pd.read_csv('.//train.csv', delimiter=';')
-    df_test = pd.read_csv('.//test.csv', delimiter=';')
+    load_dotenv()
+
+    df = pd.read_csv('.data/train.csv', delimiter=';')
+    df_test = pd.read_csv('.data/test.csv', delimiter=';')
     ans = {}
 
-    client = MultiServerMCPClient({'trade': {'url': 'https://screeching-blue-barracuda.fastmcp.app/mcp',
+    client = MultiServerMCPClient({'trade': {'url': 'http://127.0.0.1:8000/mcp',
                                                 "transport": "streamable_http"}})
 
     tools = await client.get_tools()
-    #model = ChatOllama(model='qwen3:4b', temperature=0)
+    #model = ChatOllama(model='qwen3:4b', temperature=0) для использования локальной модели
     model = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="x-ai/grok-4-fast"
+        model="openai/gpt-4.1-mini"
     )
 
     llm = create_react_agent(
@@ -230,21 +231,18 @@ async def get_submission():
 
     tokens_input = 0
     tokens_output = 0
-    pricing_input = 0.2 / (10 ** 6)
-    pricing_output = 0.5 / (10 ** 6)
+    pricing_input = 0.4 / (10 ** 6)
+    pricing_output = 1.6 / (10 ** 6)
 
     for index, row in df_test.iterrows():
         text = row.question
-        print(text)
         msg = await llm.ainvoke(prompt.invoke({"msgs": [HumanMessage(content=text)]}))
-        print(msg)
 
         msg = msg['messages'][-1]
         tokens_input += msg.usage_metadata['input_tokens']
         tokens_output += msg.usage_metadata['output_tokens']
         answer = msg.content
 
-        print((tokens_input * pricing_input) + (tokens_output * pricing_output))
 
         answer_parts = answer.split(' ')
         method = None
@@ -272,7 +270,7 @@ async def get_submission():
     subm = pd.DataFrame(ans).T
     subm.reset_index(inplace = True)
     subm.columns = ['uid', 'type', 'request']
-    subm.to_csv('./subm.csv', index=False, sep = ';')
+    subm.to_csv('.data/subm.csv', index=False, sep = ';')
     
     avg_price = ((tokens_input * pricing_input) + (tokens_output * pricing_output)) / len(df_test)
     print(f'{avg_price} $ в среднем на запрос')
@@ -282,7 +280,5 @@ async def get_submission():
 
 
 if __name__ == '__main__':
-
-    #asyncio.run(get_chat())
 
     asyncio.run(get_submission())
